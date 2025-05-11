@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expression Tree Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #e0f7fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .calculator {
+      background-color: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      padding: 20px 25px;
+      width: 320px;
+    }
+    #display {
+      width: 100%;
+      height: 50px;
+      font-size: 1.5em;
+      text-align: right;
+      padding: 10px;
+      margin-bottom: 20px;
+      border: 2px solid #b2ebf2;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .buttons button {
+      height: 50px;
+      font-size: 1.2em;
+      border: none;
+      border-radius: 8px;
+      background-color: #00bcd4;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    .buttons button:hover {
+      background-color: #008c9e;
+    }
+    .buttons button#equal {
+      grid-column: span 2;
+      background-color: #4caf50;
+    }
+    .buttons button#equal:hover {
+      background-color: #3d8b40;
+    }
+    .buttons button.clear {
+      background-color: #f44336;
+    }
+    .buttons button.clear:hover {
+      background-color: #d32f2f;
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator">
+    <input type="text" id="display" readonly />
+    <div class="buttons">
+      <button onclick="appendValue('1')">1</button>
+      <button onclick="appendValue('2')">2</button>
+      <button onclick="appendValue('3')">3</button>
+      <button onclick="appendValue('+')">+</button>
+
+      <button onclick="appendValue('4')">4</button>
+      <button onclick="appendValue('5')">5</button>
+      <button onclick="appendValue('6')">6</button>
+      <button onclick="appendValue('-')">-</button>
+
+      <button onclick="appendValue('7')">7</button>
+      <button onclick="appendValue('8')">8</button>
+      <button onclick="appendValue('9')">9</button>
+      <button onclick="appendValue('*')">*</button>
+
+      <button onclick="appendValue('0')">0</button>
+      <button onclick="appendValue('.')">.</button>
+      <button onclick="appendValue('(')">(</button>
+      <button onclick="appendValue(')')">)</button>
+
+      <button class="clear" onclick="clearDisplay()">C</button>
+      <button id="equal">=</button>
+      <button onclick="appendValue('/')">/</button>
+    </div>
+  </div>
+
+  <script>
+    class Node {
+      constructor(val, left = null, right = null) {
+        this.val = val;
+        this.left = left;
+        this.right = right;
+      }
+    }
+
+    function tokenize(expr) {
+      return expr.match(/(\d+\.?\d*|\+|\-|\*|\/|\(|\))/g);
+    }
+
+    function infixToPostfix(tokens) {
+      const precedence = { '+': 1, '-': 1, '*': 2, '/': 2 };
+      const output = [];
+      const operators = [];
+
+      for (let token of tokens) {
+        if (!isNaN(token)) {
+          output.push(token);
+        } else if (token === '(') {
+          operators.push(token);
+        } else if (token === ')') {
+          while (operators.length && operators[operators.length - 1] !== '(') {
+            output.push(operators.pop());
+          }
+          operators.pop();
+        } else {
+          while (
+            operators.length &&
+            precedence[token] <= precedence[operators[operators.length - 1]]
+          ) {
+            output.push(operators.pop());
+          }
+          operators.push(token);
+        }
+      }
+
+      while (operators.length) {
+        output.push(operators.pop());
+      }
+
+      return output;
+    }
+
+    function buildExpressionTree(postfix) {
+      const stack = [];
+      for (let token of postfix) {
+        if (!isNaN(token)) {
+          stack.push(new Node(Number(token)));
+        } else {
+          const right = stack.pop();
+          const left = stack.pop();
+          stack.push(new Node(token, left, right));
+        }
+      }
+      return stack.pop();
+    }
+
+    function evaluateTree(node) {
+      if (!node.left && !node.right) return node.val;
+      const leftVal = evaluateTree(node.left);
+      const rightVal = evaluateTree(node.right);
+      switch (node.val) {
+        case '+': return leftVal + rightVal;
+        case '-': return leftVal - rightVal;
+        case '*': return leftVal * rightVal;
+        case '/': return leftVal / rightVal;
+      }
+    }
+
+    function evaluateExpression(expr) {
+      const tokens = tokenize(expr);
+      const postfix = infixToPostfix(tokens);
+      const tree = buildExpressionTree(postfix);
+      return evaluateTree(tree);
+    }
+
+    function appendValue(val) {
+      const display = document.getElementById("display");
+      display.value += val;
+    }
+
+    function clearDisplay() {
+      document.getElementById("display").value = "";
+    }
+
+    document.getElementById("equal").addEventListener("click", () => {
+      const display = document.getElementById("display");
+      try {
+        const result = evaluateExpression(display.value);
+        display.value = result;
+      } catch (e) {
+        display.value = "Error";
+      }
+    });
+  </script>
+</body>
+</html>
